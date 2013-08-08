@@ -24,29 +24,16 @@
 
 (deftest parse-simple-values
   (testing "Parse long"
-    (is (= (parse "42") 42)))
+    (is (= (parse-atom "42") 42)))
   (testing "Parse double"
-    (is (fuzzy= (parse "42.1") 42.1)))
+    (is (fuzzy= (parse-atom "42.1") 42.1)))
   (testing "Parse 'true'"
-    (is (parse "true")))
+    (is (parse-atom "true")))
   (testing "Parse 'false'"
-    (is (not (parse "false"))))
+    (is (not (parse-atom "false"))))
   (testing "Parse number"
-    (is (= (parse "42") 42)))
+    (is (= (parse-atom "42") 42)))
   (testing "Parse string"
-    (is (= (parse "foo") "foo")))
-  )
-
-(deftest parse-simple-values
-  (testing "Parse long"
-    (is (= (parse "42") 42)))
-  (testing "Parse double"
-    (is (fuzzy= (parse "42.1") 42.1)))
-  (testing "Parse 'true'"
-    (is (parse "true")))
-  (testing "Parse 'false'"
-    (is (not (parse "false"))))
-  (testing "Parse number"
-    (is (= (parse "42") 42)))
+    (is (= (parse-atom "foo") "foo")))
   )
 

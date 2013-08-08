@@ -15,10 +15,12 @@
   (filter (fn [s] (> (count s) 0)) 
     (string/split (replace str #"([\(\)])" " $0 ") #"\s")))
 
-(defn parse [str]
-  (try-or 
-    (Long/parseLong str) 
-    (Double/parseDouble str) 
-    (Boolean/parseBoolean str) 
-    str))
+(defn parse-atom [str]
+  (cond 
+    (= "true" str) true
+    (= "false" str) false
+    :else (try-or 
+            (Long/parseLong str) 
+            (Double/parseDouble str) 
+            str)))
 
