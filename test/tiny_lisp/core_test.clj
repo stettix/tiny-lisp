@@ -7,7 +7,7 @@
 
 (deftest test-tokenize
   (testing "tokenize empty string"
-    (is (= (tokenize "") '(""))))
+    (is (= (tokenize "") '())))
   (testing "tokenize single token"
     (is (= (tokenize "42") '("42"))))
   (testing "tokenize single token with floating point value"
@@ -19,7 +19,7 @@
   (testing "tokenize single list with multiple items"
     (is (= (tokenize "(1 42.0 3)") '("(" "1" "42.0" "3" ")"))))
   (testing "tokenize nested lists"
-    (is (= (tokenize "(* (+ 2 3) 1") '("(" "*" "(" "+" "2" "3" ")" "1"")"))))
+    (is (= (tokenize "(* (+ 2 3) 1)") '("(" "*" "(" "+" "2" "3" ")" "1" ")"))))
   )
 
 (deftest parse-simple-values
@@ -33,6 +33,8 @@
     (is (not (parse "false"))))
   (testing "Parse number"
     (is (= (parse "42") 42)))
+  (testing "Parse string"
+    (is (= (parse "foo") "foo")))
   )
 
 (deftest parse-simple-values
