@@ -13,7 +13,7 @@
 
 (defn eval [expr]
   ; TODO - a few more details needed here.
-  (.toString expr))
+  (.toString (first expr)))
 
 (defn parse [tokens]
   tokens) ; // TODO: that's not quite right is it...
@@ -35,7 +35,13 @@
   (println v)) ; TODO: Render valid Lisp string.
 
 (defn repl []
-  (doseq [line (line-seq (java.io.BufferedReader. *in*))] 
+  (println "Welcome to tiny-lisp!")
+  (doseq [line (line-seq (java.io.BufferedReader. *in*))]
     (print-result (eval (tokenize (parse line))))
     )
   )
+
+;(defn -main []
+  (repl)
+;)
+  
