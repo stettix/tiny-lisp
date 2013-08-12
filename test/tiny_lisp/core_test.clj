@@ -111,7 +111,7 @@
   )
 
 (defn eval-str [str]
-  (eval-exp (get (parse (tokenize str)) 0) env))
+  (get (eval-exp (get (parse (tokenize str)) 0) env) 0))
 
 (deftest access-unknown-symbols
   (is (thrown? Exception (eval-str "x")))
@@ -226,7 +226,7 @@
     (testing "null? with non-empty list argument"
       (is (not (eval-str "(null? (quote (1 2 3)))"))))
     (testing "null? with empty list argument"
-      (is (= (eval-str "(null? (quote ()))")))))
+      (is (eval-str "(null? (quote ()))"))))
 
   (deftest eval-null?-with-missing-argument
     (is (thrown? IllegalArgumentException (eval-str "(null?)"))))
@@ -394,6 +394,8 @@
       (is (= (eval-str code2) 7)))
   )
 
+  ; TODO: Test built-in operators.
+  
   (defn evalMultipleStr [str]
     (def exprs (parse (tokenize str)))
     (map #(eval % env) exprs))

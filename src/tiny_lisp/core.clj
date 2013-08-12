@@ -15,12 +15,19 @@
   ; TODO: include various default operators in the returned map.
   {})
 
+; [single expression, environment map] -> [result of evaluation, updated environment map]
 (defn eval-exp [expr env]
-  ; TODO - a few more details needed here.
-  expr)
-  ;(.toString (first expr)))
+  (def op (first expr))
+  (def args (rest expr))
+  (println op ":" args)
+  (cond
+    (string? expr) [expr env] ; TODO: Look up symbol in env.
+    (= "q" op) (eval-exp args env)
+    (= "atom?" op) (not (seq? (eval-exp args env)))
+  ; TODO - a few more details needed here...
+    :else [expr env]))
 
-(defn parse-atom [str]
+(defn parse-atom [str](eval-exp '("atom?" 42) {})
   (cond 
     (= "true" str) true
     (= "false" str) false
@@ -59,10 +66,9 @@
 
 (defn repl []
   (println "Welcome to tiny-lisp!")
+  ; TODO: Provide a prompt for each line...
   (doseq [line (line-seq (java.io.BufferedReader. *in*))]
     (println (expr->string (eval-exp (parse (tokenize line)))))
     ))
 
-;(defn -main []
 ;  (repl)
-;)
