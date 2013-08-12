@@ -1,6 +1,5 @@
 (ns tiny-lisp.core
   (require [clojure.string :as string]))
-;; TODO: use 'require' instead of 'use' here!
 
 (defmacro try-or
   "See http://clj-me.cgrand.net/2009/01/08/try-or-or-try-try-else-or-else-try/" 
@@ -12,7 +11,11 @@
        (catch Exception e#
          (try-or ~@forms)))))
 
-(defn eval-expr [expr]
+(defn create-default-env []
+  ; TODO: include various default operators in the returned map.
+  {})
+
+(defn eval-exp [expr env]
   ; TODO - a few more details needed here.
   expr)
   ;(.toString (first expr)))
@@ -57,9 +60,9 @@
 (defn repl []
   (println "Welcome to tiny-lisp!")
   (doseq [line (line-seq (java.io.BufferedReader. *in*))]
-    (println (expr->string (eval-expr (parse (tokenize line)))))
+    (println (expr->string (eval-exp (parse (tokenize line)))))
     ))
 
 ;(defn -main []
-  (repl)
+;  (repl)
 ;)
