@@ -28,17 +28,16 @@
 
 ; list of token strings -> tuple of [parsed list, # of read tokens]
 (defn parse-list [tokens usedTokenCount aggr]
-  (println usedTokenCount ":" tokens " - " aggr)
   (cond
     (empty? tokens) (throw (IllegalArgumentException. "Missing ')'"))
     (= ")" (first tokens)) [(reverse aggr) (inc usedTokenCount)]
     (= "(" (first tokens)) (do
                              (let [[nestedList, consumedTokens]
-                               (parse-list (rest tokens) 0 '())]
-                               (recur 
+                               (parse-list (rest tokens) 1 '())]
+                               (parse-list 
                                  (drop consumedTokens tokens) 
                                  (+ usedTokenCount consumedTokens) 
-                                 (cons aggr nestedList))))
+                                 (cons nestedList aggr))))
     :else (recur (rest tokens) (inc usedTokenCount) (cons (parse-atom (first tokens)) aggr))
     ))
 
@@ -62,5 +61,5 @@
     ))
 
 ;(defn -main []
-;  (repl)
+  (repl)
 ;)

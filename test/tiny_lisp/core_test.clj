@@ -75,11 +75,11 @@
   (testing "Parse empty list"
     (is (= (parse '("(" ")")) '(()))))
   (testing "Parse simple list"
-    (is (= (parse '(("(" "+" "1" "2" ")"))) 
-           '('("+" 1 2)))))
+    (is (= (parse '("(" "+" "1" "2" ")")) 
+           '(("+" 1 2)))))
   (testing "Parse nested lists"
-    (is (= (parse '(("(" "+" "1" "(" "+" "2" "3" ")" ")")))
-           '("+" 1 ("+" 2 3))))))
+    (is (= (parse '("(" "+" "1" "(" "+" "2" "3" ")" ")"))
+           '(("+" 1 ("+" 2 3)))))))
 
 (deftest test-parse-multiple-lists
   (testing "Multiple root lists, should return all"
@@ -90,7 +90,7 @@
   (testing "Parse open bracket only"
     (is (thrown? IllegalArgumentException (parse '("(")))))
   (testing "Parse missing close bracket"
-    (is (thrown? IllegalArgumentException (parse '("(+ 1 2")))))
+    (is (thrown? IllegalArgumentException (parse '("(" "+" "1" "2")))))
   )
 
 (deftest test-parse-list
