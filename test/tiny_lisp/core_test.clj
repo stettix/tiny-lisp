@@ -246,7 +246,7 @@
   (testing "cons value to list with multiple items"
     (is (= (eval-str "(cons 1 (quote (2 3 4)))") '(1 2 3 4))))
   (testing "cons list to list with multiple items"
-    (is (= (eval-str "(cons (quote (1)) (quote (2 3 4)))") '('(1) 2 3 4))))
+    (is (= (eval-str "(cons (quote (1)) (quote (2 3 4)))") '((1) 2 3 4))))
   )
 
 (deftest eval-cons-invalid-arguments
