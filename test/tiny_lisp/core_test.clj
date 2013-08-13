@@ -126,7 +126,7 @@
   (testing  "eval with boolean value true"
     (is (eval-str "true")))
   (testing "eval with boolean value false"
-    (is (eval-str "false")))
+    (is (not (eval-str "false"))))
   )
 
 (deftest eval-quote

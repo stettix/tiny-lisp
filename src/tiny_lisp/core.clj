@@ -22,6 +22,8 @@
   (match [expr]
     [(s :guard string?)] [(get env expr) env]
     [[ (:or "q" "quote") & args ]] [(first args) env]
+
+    ; TODO: See if I can do all this destruturing inside the [[ ]].    
     [[ "atom" & args ]] (let [[arg1 arg2] args
                           [res newEnv] (eval-exp arg1 env)]
                           (if arg2 (throw (IllegalArgumentException. "Exactly one argument excpected for 'atom'")))
@@ -47,6 +49,31 @@
                           (if (not (coll? res2)) (throw (IllegalArgumentException. "Second argument to 'cons' must be a list")))
                           (if arg3 (throw (IllegalArgumentException. "Exactly two arguments excpected for 'cdr'")))
                           [(cons res1 res2) env])
+    [[ "define" & args ]] (let [[sym arg arg2] args
+                                [res newEnv] (eval-exp arg env)]
+                            (if arg2 (throw (IllegalArgumentException. "Exactly two arguments excpected for 'define'")))
+                            [sym (conj newEnv [sym res])])
+    ; TODO: Add a test that chains defines and/or set!s.
+    [[ "set!" & args ]] (let [[sym arg arg2] args
+                              [res newEnv] (eval-exp arg env)]
+                          (if arg2 (throw (IllegalArgumentException. "Exactly two arguments excpected for 'set!'")))
+                          (let [prevValue (get env sym)]
+                            (println ">> " prevValue " : " env)
+                            (if (not prevValue) (throw (IllegalArgumentException. (str "Uknown symbol '" sym "'"))))
+                            [prevValue (conj newEnv [sym res])]))
+                            
+;    [["begin" & args]] (let [results (map #(eval-exp %1 env) args)]
+;                         (last results))
+     [["begin" & args]] (loop [exprs args
+                               previousEnv env]
+                          (let [[res updatedEnv] (eval-exp (first expr) previousEnv)
+                               remainingArgs (rest args)]
+                            (if (empty? remainingArgs) 
+                              [res updatedEnv]
+                              (recur (rest args) updatedEnv))))
+
+    ;[(last (map #(eval-exp %1 env) args)) env] ; TODO: Should get last env, but how?
+    ; Actually MUST do this, or (being (define) (set)) won't work!!!
     
     ; TODO: Add an arg2 to the above and throw exception if it's non-nil?
     
@@ -55,7 +82,10 @@
     
     :else [expr env]))
 
-;(eval-exp ["cdr" '(1 2 3)] {})
+(eval-exp ["begin" 1 2 3] {})
+(eval-exp ["define" "x" 42] {})
+(eval-exp ["begin" ["define" "x" 42]] {})
+(eval-exp ["begin" ["define" "x" 42] ["set!" "x" 36]] {})
 
 (defn parse-atom [str]
   (cond 
