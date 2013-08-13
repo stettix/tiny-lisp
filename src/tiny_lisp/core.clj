@@ -64,21 +64,26 @@
                             
 ;    [["begin" & args]] (let [results (map #(eval-exp %1 env) args)]
 ;                         (last results))
-     [["begin" & args]] (loop [exprs args
-                               previousEnv env]
-                          (let [[res updatedEnv] (eval-exp (first expr) previousEnv)
-                               remainingArgs (rest args)]
-                            (if (empty? remainingArgs) 
-                              [res updatedEnv]
-                              (recur (rest args) updatedEnv))))
-
     ;[(last (map #(eval-exp %1 env) args)) env] ; TODO: Should get last env, but how?
     ; Actually MUST do this, or (being (define) (set)) won't work!!!
-    
+
+     [["begin" & args]] (loop [exprs args
+                               previousEnv env]
+                          ; TODO: Handle empty args case.
+                          (let [[res updatedEnv] (eval-exp (first exprs) previousEnv)
+                               remainingArgs (rest exprs)]
+                            (if (empty? remainingArgs) 
+                              [res updatedEnv]
+                              (recur remainingArgs updatedEnv))))
+
+     
     ; TODO: Add an arg2 to the above and throw exception if it's non-nil?
     
     ; TODO: have a block for all cases that take args that need to be evaluated, and evaluate them 
     ; all together before proceeding?
+    
+    ; TODO: replace (not (= in code and test with (not=
+    
     
     :else [expr env]))
 
