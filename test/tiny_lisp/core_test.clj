@@ -97,17 +97,17 @@
 
 (deftest test-parse-list
   (testing "Empty list case"
-    (is (= (parse-list [")"] 0 '()) ['() 1])))
+    (is (= (parse-list [")"] 0 '()) [[] 1])))
   (testing "Single item case"
-    (is (= (parse-list ["42" ")"] 0 '()) ['(42) 2])))
+    (is (= (parse-list ["42" ")"] 0 []) ['(42) 2])))
   (testing "Multiple items"
-    (is (= (parse-list ["1" "2" "3" ")"] 0 '()) ['(1 2 3) 4])))
+    (is (= (parse-list ["1" "2" "3" ")"] 0 []) ['(1 2 3) 4])))
   (testing "Partial list case"
-    (is (= (parse-list ["1" "2" "3" ")" "4" "5"] 0 '()) ['(1 2 3) 4])))
+    (is (= (parse-list ["1" "2" "3" ")" "4" "5"] 0 []) ['(1 2 3) 4])))
   (testing "Partial nested list case"
-    (is (= (parse-list ["1" "2" "3" "(" "4" "5" ")" "6" ")" "7"] 0 '()) ['(1 2 3 (4 5) 6) 9])))
+    (is (= (parse-list ["1" "2" "3" "(" "4" "5" ")" "6" ")" "7"] 0 []) ['(1 2 3 (4 5) 6) 9])))
   (testing "Missing close bracket case"
-    (is (thrown? IllegalArgumentException (parse-list ["1" "2" "3"] 0 '()))))
+    (is (thrown? IllegalArgumentException (parse-list ["1" "2" "3"] 0 []))))
   )
 
 (defn eval-str [str]
