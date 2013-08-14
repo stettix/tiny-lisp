@@ -14,8 +14,7 @@
          (try-or ~@forms)))))
 
 (defn create-default-env []
-  ; TODO: include various default operators in the returned map.
-  {})
+  { "+" +, "-" -, "*" *, "/" /, "<" <, "<=" <=, ">" >, ">=" >=, "=" = })
 
 (defn error [message]
   (throw (IllegalArgumentException. message)))
@@ -61,26 +60,26 @@
                              _ (error-if (or (nil? arg1) arg2) "Exactly one argument excpected for 'cdr'")
                              [res newEnv] (eval-exp arg1 env)
                              _ (error-if (empty? res) "Argument to 'cdr' must be a non-empty list")]
-                         (if arg2 (throw (IllegalArgumentException. "Exactly one argument excpected for 'cdr'")))
                          [(rest res) newEnv])
     
     [[ "cons" & args ]] (let [[arg1 arg2 arg3] args
+                              _ (error-if arg3 "Exactly two arguments excpected for 'cdr'")
                               [res1 newEnv] (eval-exp arg1 env)
                               [res2 newEnv2] (eval-exp arg2 newEnv)]
-                          (if (not (coll? res2)) (throw (IllegalArgumentException. "Second argument to 'cons' must be a list")))
-                          (if arg3 (throw (IllegalArgumentException. "Exactly two arguments excpected for 'cdr'")))
+                          (error-if (not (coll? res2)) "Second argument to 'cons' must be a list")
                           [(cons res1 res2) env])
     
-    [[ "define" & args ]] (let [[sym arg arg2] args
+    [[ "define" & args ]] (let [[sym arg rest] args
+                                _ (error-if (or (not (string? sym)) (nil? arg) rest) 
+                                              "Exactly two arguments excpected for 'define'")
                                 [res newEnv] (eval-exp arg env)]
-                            (if arg2 (throw (IllegalArgumentException. "Exactly two arguments excpected for 'define'")))
                             [sym (conj newEnv [sym res])])
     
-    [[ "set!" & args ]] (let [[sym arg arg2] args
+    [[ "set!" & args ]] (let [[sym arg arg3] args
+                              _ (error-if arg3 "Exactly two arguments excpected for 'set!'")
                               [res newEnv] (eval-exp arg env)]
-                          (if arg2 (throw (IllegalArgumentException. "Exactly two arguments excpected for 'set!'")))
                           (let [prevValue (get env sym)]
-                            (if (not prevValue) (throw (IllegalArgumentException. (str "Uknown symbol '" sym "'"))))
+                            (error-if (not prevValue) (str "Uknown symbol '" sym "'"))
                             [prevValue (conj newEnv [sym res])]))
                             
      [["begin" & args]] (do
@@ -92,12 +91,20 @@
                               (if (empty? remainingArgs) 
                                 [res updatedEnv]
                                 (recur remainingArgs updatedEnv)))))
-
      
-    ; TODO: Add an arg2 to the above and throw exception if it's non-nil?
-    
+    [["if" & args]] (let [[test-exp conseq alt rest] args
+                          _ (error-if (or (nil? test-exp) (nil? conseq) (nil? alt) rest) "Expect three arguments for 'if'")
+                          [test-result newEnv] (eval-exp test-exp env)]
+                          (println test-result)
+                          (if test-result 
+                            (eval-exp conseq newEnv) 
+                            (eval-exp alt newEnv)))
+     
     ; TODO: have a block for all cases that take args that need to be evaluated, and evaluate them 
-    ; all together before proceeding?
+    ; all together before proceeding? Then again, I want to do error checking first... and that depends on how
+    ; many args each form takes.
+    
+    ; TODO: Change error-if to take varargs of booleans? Or doesn't that go well with the msg? Maybe a list then?
     
     :else [expr env]))
 
@@ -145,4 +152,3 @@
     (println (expr->string (eval-exp (parse (tokenize line)))))
     ))
 
-;  (repl)
