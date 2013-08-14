@@ -83,14 +83,15 @@
                             (if (not prevValue) (throw (IllegalArgumentException. (str "Uknown symbol '" sym "'"))))
                             [prevValue (conj newEnv [sym res])]))
                             
-     [["begin" & args]] (loop [exprs args
-                               previousEnv env]
-                          ; TODO: Handle empty args case.
-                          (let [[res updatedEnv] (eval-exp (first exprs) previousEnv)
-                               remainingArgs (rest exprs)]
-                            (if (empty? remainingArgs) 
-                              [res updatedEnv]
-                              (recur remainingArgs updatedEnv))))
+     [["begin" & args]] (do
+                          (error-if (empty? args) "Must provide at least one expression for 'begin'")
+                          (loop [exprs args
+                                 previousEnv env]
+                            (let [[res updatedEnv] (eval-exp (first exprs) previousEnv)
+                                  remainingArgs (rest exprs)]
+                              (if (empty? remainingArgs) 
+                                [res updatedEnv]
+                                (recur remainingArgs updatedEnv)))))
 
      
     ; TODO: Add an arg2 to the above and throw exception if it's non-nil?
