@@ -17,56 +17,72 @@
   ; TODO: include various default operators in the returned map.
   {})
 
+(defn error [message]
+  (throw (IllegalArgumentException. message)))
+
+(defn error-if [has-error message]
+  (if has-error (error message)))
+
 ; [single expression, environment map] -> [result of evaluation, updated environment map]
 (defn eval-exp [expr env]
   (match [expr]
-    [(s :guard string?)] [(get env expr) env]
-    [[ (:or "q" "quote") & args ]] [(first args) env]
-
-    ; TODO: See if I can do all this destruturing inside the [[ ]].    
+    [(s :guard string?)] (if (contains? env s)
+                           [(get env s) env]
+                           (error("Unknown symbol '" s "'")))
+    
+    [[ (:or "q" "quote") & args ]] (let [[arg1 arg2] args
+                                         _ (error-if (or (nil? arg1) arg2) "Exactly one argument excpected for 'quote'")
+                                         ]
+                                     [(first args) env])
+    
     [[ "atom" & args ]] (let [[arg1 arg2] args
-                          [res newEnv] (eval-exp arg1 env)]
-                          (if arg2 (throw (IllegalArgumentException. "Exactly one argument excpected for 'atom'")))
+                              _ (error-if (or (nil? arg1) arg2) "Exactly one argument excpected for 'atom'")
+                              [res newEnv] (eval-exp arg1 env)]
                           [(not (coll? res)), newEnv])
-    [[ "eq?" & args ]] (let [[arg1 arg2] args]
+    
+    [[ "eq?" & args ]] (let [[arg1 arg2 arg3] args
+                             _ (error-if (or (nil? arg1) (nil? arg2) arg3) "Exactly two arguments excpected for 'eq?'")
+                             ]
                          ; TODO: Shouldn't these be evalled?
                          [(= arg1 arg2) env])
+    
     [[ "null?" & args ]] (let [[arg1 arg2] args
+                               _ (error-if (or (nil? arg1) arg2) "Exactly one argument excpected for 'null?'")
                                [res newEnv] (eval-exp arg1 env)]
-                           (if arg2 (throw (IllegalArgumentException. "Exactly one argument excpected for 'null?'")))
-                            [(= [] res) newEnv])
+                           [(= [] res) newEnv])
+    
     [[ "car" & args ]] (let [[arg1 arg2] args
-                             [res newEnv] (eval-exp arg1 env)]
-                         (if arg2 (throw (IllegalArgumentException. "Exactly one argument excpected for 'car'")))
+                             _ (error-if (or (nil? arg1) arg2) "Exactly one argument excpected for 'car'")
+                             [res newEnv] (eval-exp arg1 env)
+                             _ (error-if (empty? res) "Argument to 'car' must be a non-empty list")]
                          [(first res) newEnv])
+    
     [[ "cdr" & args ]] (let [[arg1 arg2] args
-                             [res newEnv] (eval-exp arg1 env)]
+                             _ (error-if (or (nil? arg1) arg2) "Exactly one argument excpected for 'cdr'")
+                             [res newEnv] (eval-exp arg1 env)
+                             _ (error-if (empty? res) "Argument to 'cdr' must be a non-empty list")]
                          (if arg2 (throw (IllegalArgumentException. "Exactly one argument excpected for 'cdr'")))
                          [(rest res) newEnv])
+    
     [[ "cons" & args ]] (let [[arg1 arg2 arg3] args
                               [res1 newEnv] (eval-exp arg1 env)
                               [res2 newEnv2] (eval-exp arg2 newEnv)]
                           (if (not (coll? res2)) (throw (IllegalArgumentException. "Second argument to 'cons' must be a list")))
                           (if arg3 (throw (IllegalArgumentException. "Exactly two arguments excpected for 'cdr'")))
                           [(cons res1 res2) env])
+    
     [[ "define" & args ]] (let [[sym arg arg2] args
                                 [res newEnv] (eval-exp arg env)]
                             (if arg2 (throw (IllegalArgumentException. "Exactly two arguments excpected for 'define'")))
                             [sym (conj newEnv [sym res])])
-    ; TODO: Add a test that chains defines and/or set!s.
+    
     [[ "set!" & args ]] (let [[sym arg arg2] args
                               [res newEnv] (eval-exp arg env)]
                           (if arg2 (throw (IllegalArgumentException. "Exactly two arguments excpected for 'set!'")))
                           (let [prevValue (get env sym)]
-                            (println ">> " prevValue " : " env)
                             (if (not prevValue) (throw (IllegalArgumentException. (str "Uknown symbol '" sym "'"))))
                             [prevValue (conj newEnv [sym res])]))
                             
-;    [["begin" & args]] (let [results (map #(eval-exp %1 env) args)]
-;                         (last results))
-    ;[(last (map #(eval-exp %1 env) args)) env] ; TODO: Should get last env, but how?
-    ; Actually MUST do this, or (being (define) (set)) won't work!!!
-
      [["begin" & args]] (loop [exprs args
                                previousEnv env]
                           ; TODO: Handle empty args case.
@@ -82,15 +98,7 @@
     ; TODO: have a block for all cases that take args that need to be evaluated, and evaluate them 
     ; all together before proceeding?
     
-    ; TODO: replace (not (= in code and test with (not=
-    
-    
     :else [expr env]))
-
-(eval-exp ["begin" 1 2 3] {})
-(eval-exp ["define" "x" 42] {})
-(eval-exp ["begin" ["define" "x" 42]] {})
-(eval-exp ["begin" ["define" "x" 42] ["set!" "x" 36]] {})
 
 (defn parse-atom [str]
   (cond 
