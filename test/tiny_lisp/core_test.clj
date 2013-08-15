@@ -5,7 +5,71 @@
 (defn fuzzy= [x y]
   (< (Math/abs (- x y)) 0.000001))
 
-(def env (create-default-env))
+(def env default-env)
+
+;  test("Env find with unknown symbols") {
+;    intercept[Exception] { new Env(None).find("x") }
+;    intercept[Exception] { new Env(Some(new Env(None))).find("x") }
+;  }
+;
+;  test("Env with pre-populated list of values") {
+;    assert(new Env(None, List("x"), List(42)).find("x") === 42, "Single defined variable")
+;    assert(new Env(None, List("x", "y"), List(42, 36)).find("x") === 42, "Find first variable")
+;    assert(new Env(None, List("x", "y"), List(42, 36)).find("y") === 36, "Find second variable")
+;    intercept[Exception] { new Env(None, List("x"), List(42)).find("y") }
+;  }
+;
+;  test("Access unknown symbols") {
+;    intercept[Exception] { evalStr("x") }
+;    intercept[Exception] { evalStr("(begin (define x 42) y)") }
+;  }
+
+(deftest test-default-env
+  (is (= ((default-env "+") 2 3) 5))
+  (is (= ((default-env "*") 2 3) 6))
+  (is (= ((default-env "/") 8 4) 2))
+  (is (= ((default-env "-") 2 3) -1))
+  (is ((default-env "<") 2 3))
+  (is (not ((default-env "<") 3 3)))
+  (is (not ((default-env "<") 3 2)))
+  (is ((default-env ">") 3 2))
+  (is (not ((default-env ">") 3 3)))
+  (is (not ((default-env ">") 2 3)))
+  (is ((default-env "<=") 2 3))
+  (is ((default-env "<=") 3 3))
+  (is (not ((default-env "<=") 3 2)))
+  (is ((default-env ">") 3 2))
+  (is (not ((default-env ">") 3 3)))
+  (is (not ((default-env ">") 2 3)))
+  )
+
+(deftest test-env-set
+  (let [e (env-set "x" 42 default-env)]
+    (is (= 42 (e "x")))
+    (is (= ((e "+") 2 3) 5))
+    )
+  (let [e1 (env-set "x" 42 empty-env)
+        e2 (env-set "x" 7 e1)
+        e3 (env-set "y" "foo" e2)]
+    (is (= 42 (e1 "x")))
+    (is (nil? (e1 "y")))
+    (is (= 7 (e2 "x")))
+    (is (nil? (e2 "y")))
+    (is (= 7 (e3 "x")))
+    (is (= "foo" (e3 "y"))))
+  )
+
+(deftest test-wrap-env
+  (let [e1 { "x" 42 "y" 1 }
+        e2 { "x" 36 "z" "bar" }
+        e1-wrapped-in-e2 (wrap-env e1 e2)
+        e2-wrapped-in-e1 (wrap-env e2 e1)]
+    (is (= (e1-wrapped-in-e2 "x") 42))
+    (is (= (e2-wrapped-in-e1 "x") 36))
+    (is (= (e1-wrapped-in-e2 "y") (e2-wrapped-in-e1 "y") 1))
+    (is (= (e1-wrapped-in-e2 "z") (e2-wrapped-in-e1 "z") "bar"))
+    )
+  )
 
 (deftest test-tokenize
   (testing "tokenize empty string"
@@ -398,8 +462,6 @@
     (is (= (eval-str code2) 7)))
   )
 
-; TODO: Test built-in operators.
-
 (defn evalMultipleStr [str]
   (def exprs (parse (tokenize str)))
   (map #(eval % env) exprs))
@@ -426,3 +488,4 @@
 	                  (sqrt 2))")
   (def squareRootOfTwo (eval-str(code)))
   (is (< (- (java.lang.Math/abs squareRootOfTwo) 1.41421)) 0.0001))
+

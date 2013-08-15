@@ -13,8 +13,26 @@
        (catch Exception e#
          (try-or ~@forms)))))
 
-(defn create-default-env []
+; Define an environment as a function that returns the value of a named symbol.
+; Maps work nicely as such functions.
+(def empty-env {})
+
+; A basic set of operations.
+(def default-env
   { "+" +, "-" -, "*" *, "/" /, "<" <, "<=" <=, ">" >, ">=" >=, "=" = })
+
+; Return an environment that includes the new value. 
+(defn env-set [symbol value env]
+  (fn [sym]
+    (if (= sym symbol) 
+      value
+      (env sym))))
+
+; Return an environment that will perform lookups in the 'inner' environment first,
+; then look it up in the outer if no result was found.
+(defn wrap-env [inner-env outer-env]
+  (fn [sym] 
+    (or (inner-env sym) (outer-env sym))))
 
 (defn error [message]
   (throw (IllegalArgumentException. message)))
@@ -99,6 +117,10 @@
                           (if test-result 
                             (eval-exp conseq newEnv) 
                             (eval-exp alt newEnv)))
+    
+    [["lambda" & args]] (let [[params exprs] args
+                              
+                              ])
      
     ; TODO: have a block for all cases that take args that need to be evaluated, and evaluate them 
     ; all together before proceeding? Then again, I want to do error checking first... and that depends on how
