@@ -366,6 +366,12 @@
     (is (= (eval-str "(begin (quote (1 2)) (quote (3 4)))") '(3 4))))
   )
 
+(deftest eval-begin-check-returned-env
+  (let [[res env] (eval-str-full "(begin (define x 42))" {})]
+    (is (= res "x"))
+    (is (= (env "x") 42))
+  ))
+
 (deftest eval-begin-error-cases
   (is (thrown? Exception (eval-str "(begin)"))))
 
@@ -474,16 +480,11 @@
   (testing "Multiple literal expressions on one line"
     (is (= (eval-multiple-str("1 2 3") '(1 2 3))))))
 
-(deftest recurisve-factorial-function
+(deftest recursive-factorial-function
   (def code "(begin
-                  (define factorial (lambda (n) (if (<= n 1) 1 (* n (factorial (- n 1))))))
-                  (factorial 6))")
+               (define factorial (lambda (n) (if (<= n 1) 1 (* n (factorial (- n 1))))))
+               (factorial 6))")
   (is (= (eval-str code) 720)))
-
-;  (eval-str "(begin
-;                  (define factorial (lambda (n) (if (<= n 1) 1 (* n (factorial (- n 1))))))
-;                  (factorial 6))")
-
 
 (deftest square-roots-by-newton's-method
   (def code "(begin

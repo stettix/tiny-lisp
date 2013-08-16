@@ -95,24 +95,26 @@
     [["set!" & args]] (let [[sym arg arg3] args
                             _ (error-if arg3 "Exactly two arguments excpected for 'set!'")
                             [res newEnv] (eval-exp arg env)]
-                        (let [prevValue (get env sym)]
+                        (let [prevValue (env sym)]
                           (error-if (not prevValue) (str "Uknown symbol '" sym "'"))
                           [prevValue (env-set sym res newEnv)]))
                             
     [["begin" & args]]  (do
                           (error-if (empty? args) "Must provide at least one expression for 'begin'")
-                          (loop [exprs args
-                                 previous-env env]
-                            (let [[res updatedEnv] (eval-exp (first exprs) previous-env)
-                                  remaining-args (rest exprs)]
-                              (if (empty? remaining-args) 
-                                [res updatedEnv]
-                                (recur remaining-args updatedEnv)))))
+                          (let [[results new-env] (eval-exprs args env)]
+                            [(last results) new-env]
+                            ))
+;                          (loop [exprs args
+;                                 previous-env env]
+;                            (let [[res updatedEnv] (eval-exp (first exprs) previous-env)
+;                                  remaining-args (rest exprs)]
+;                              (if (empty? remaining-args) 
+;                                [res updatedEnv]
+;                                (recur remaining-args updatedEnv)))))
      
     [["if" & args]] (let [[test-exp conseq alt rest] args
                           _ (error-if (or (nil? test-exp) (nil? conseq) (nil? alt) rest) "Expected three arguments for 'if'")
                           [test-result newEnv] (eval-exp test-exp env)]
-                          (println test-result)
                           (if test-result 
                             (eval-exp conseq newEnv) 
                             (eval-exp alt newEnv)))
@@ -127,7 +129,6 @@
                                            (println "lambda-result: " lambda-result)
                                            lambda-result)
                                        ))
-                              _ (println "Defined lambda: " lambda)
                               ]
                           [lambda env])
     
