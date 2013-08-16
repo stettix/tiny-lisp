@@ -157,10 +157,15 @@
     (is (thrown? IllegalArgumentException (parse-list ["1" "2" "3"] 0 []))))
   )
 
-(defn eval-str [str]
-  (let [[values newEnv] (eval-exp (get (parse (tokenize str)) 0) env)]
-    (println "--- " values ":" newEnv)
-    values))
+(defn eval-str 
+  ([str env]
+    (first (eval-exp (get (parse (tokenize str)) 0) env)))
+  ([str]
+    (eval-str str default-env)))
+
+(defn eval-str-full
+  ([str env]
+    (eval-exp (get (parse (tokenize str)) 0) env)))
 
 (deftest access-unknown-symbols
   (is (thrown? Exception (eval-str "x")))
@@ -368,13 +373,26 @@
   ; This behaviour differs from tiddlylisp; a (define) statement there returns nothing.
   ; We match the behaviour of MIT/GNU Scheme instead.
   (testing "simple define expression should return the defined symbol"
-    (is (= (eval-str "(define x 42)") "x" ))))
+    (is (= (eval-str "(define x 42)") "x"))
+    (let [[res new-env] (eval-str-full "(define x 42)" empty-env)]
+      (is (= res "x"))
+      (is (= (new-env "x") 42)))
+    ))
 
 (deftest eval-define-invalid-arguments
   (is (thrown? IllegalArgumentException (eval-str "(define)")))
   (is (thrown? IllegalArgumentException (eval-str "(define x)")))
   (is (thrown? IllegalArgumentException (eval-str "(define 1 2)")))
   (is (thrown? Exception (eval-str "(define x 1 2 3)"))))
+
+(deftest eval-set!
+  ; As for 'define' this behaviour differs from tiddlylisp a 'set!' expression there returns nothing.
+  (testing "simple set! expression should return the previous value"
+    (is (= (eval-str "(set! x 36)" { "x" 42 }) 42))
+    (let [[res new-env] (eval-str-full "(set! x 36)" { "x" 42 })]
+      (is (= res 42))
+      (is (= (new-env "x") 36)))
+    ))
 
 (deftest eval-set!-check-returned-value
   ; As for 'define' this behaviour differs from tiddlylisp a 'set!' expression there returns nothing.

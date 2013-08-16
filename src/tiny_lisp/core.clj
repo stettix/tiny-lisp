@@ -47,57 +47,57 @@
                            [(env s) env]
                            (error (str "Unknown symbol '" s "'")))
     
-    [[ (:or "q" "quote") & args ]] (let [[arg1 arg2] args
+    [[(:or "q" "quote") & args]] (let [[arg1 arg2] args
                                          _ (error-if (or (nil? arg1) arg2) "Exactly one argument excpected for 'quote'")]
                                      [(first args) env])
     
-    [[ "atom" & args ]] (let [[arg1 arg2] args
+    [["atom" & args]] (let [[arg1 arg2] args
                               _ (error-if (or (nil? arg1) arg2) "Exactly one argument excpected for 'atom'")
                               [res newEnv] (eval-exp arg1 env)]
                           [(not (coll? res)), newEnv])
     
-    [[ "eq?" & args ]] (let [[arg1 arg2 arg3] args
+    [["eq?" & args]] (let [[arg1 arg2 arg3] args
                              _ (error-if (or (nil? arg1) (nil? arg2) arg3) "Exactly two arguments excpected for 'eq?'")
                              [res1 env1] (eval-exp arg1 env)
                              [res2 env2] (eval-exp arg2 env1)]
                            [(= res1 res2) env2])
     
-    [[ "null?" & args ]] (let [[arg1 arg2] args
+    [["null?" & args]] (let [[arg1 arg2] args
                                _ (error-if (or (nil? arg1) arg2) "Exactly one argument excpected for 'null?'")
                                [res newEnv] (eval-exp arg1 env)]
                            [(= [] res) newEnv])
     
-    [[ "car" & args ]] (let [[arg1 arg2] args
+    [["car" & args]] (let [[arg1 arg2] args
                              _ (error-if (or (nil? arg1) arg2) "Exactly one argument excpected for 'car'")
                              [res newEnv] (eval-exp arg1 env)
                              _ (error-if (empty? res) "Argument to 'car' must be a non-empty list")]
                          [(first res) newEnv])
     
-    [[ "cdr" & args ]] (let [[arg1 arg2] args
+    [["cdr" & args]] (let [[arg1 arg2] args
                              _ (error-if (or (nil? arg1) arg2) "Exactly one argument excpected for 'cdr'")
                              [res newEnv] (eval-exp arg1 env)
                              _ (error-if (empty? res) "Argument to 'cdr' must be a non-empty list")]
                          [(rest res) newEnv])
     
-    [[ "cons" & args ]] (let [[arg1 arg2 arg3] args
+    [["cons" & args]] (let [[arg1 arg2 arg3] args
                               _ (error-if arg3 "Exactly two arguments excpected for 'cdr'")
                               [res1 newEnv] (eval-exp arg1 env)
                               [res2 newEnv2] (eval-exp arg2 newEnv)]
                           (error-if (not (coll? res2)) "Second argument to 'cons' must be a list")
                           [(cons res1 res2) env])
     
-    [[ "define" & args ]] (let [[sym arg rest] args
-                                _ (error-if (or (not (string? sym)) (nil? arg) rest) 
-                                              "Exactly two arguments excpected for 'define'")
-                                [res newEnv] (eval-exp arg env)]
-                            [sym (conj newEnv [sym res])])
-    
-    [[ "set!" & args ]] (let [[sym arg arg3] args
-                              _ (error-if arg3 "Exactly two arguments excpected for 'set!'")
+    [["define" & args]] (let [[sym arg rest] args
+                              _ (error-if (or (not (string? sym)) (nil? arg) rest) 
+                                  "Exactly two arguments excpected for 'define'")
                               [res newEnv] (eval-exp arg env)]
-                          (let [prevValue (get env sym)]
-                            (error-if (not prevValue) (str "Uknown symbol '" sym "'"))
-                            [prevValue (conj newEnv [sym res])]))
+                          [sym (env-set sym res newEnv)])
+    
+    [["set!" & args]] (let [[sym arg arg3] args
+                            _ (error-if arg3 "Exactly two arguments excpected for 'set!'")
+                            [res newEnv] (eval-exp arg env)]
+                        (let [prevValue (get env sym)]
+                          (error-if (not prevValue) (str "Uknown symbol '" sym "'"))
+                          [prevValue (env-set sym res newEnv)]))
                             
     [["begin" & args]]  (do
                           (error-if (empty? args) "Must provide at least one expression for 'begin'")
@@ -131,7 +131,7 @@
                               ]
                           [lambda env])
     
-;    [[ procedure & args]] (do
+;    [[procedure & args]] (do
 ;                            (println "Applying proc: " procedure " with args " args)
 ;                            [(apply procedure args) env]) 
     
