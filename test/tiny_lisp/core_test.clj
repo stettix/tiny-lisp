@@ -7,23 +7,6 @@
 
 (def env default-env)
 
-;  test("Env find with unknown symbols") {
-;    intercept[Exception] { new Env(None).find("x") }
-;    intercept[Exception] { new Env(Some(new Env(None))).find("x") }
-;  }
-;
-;  test("Env with pre-populated list of values") {
-;    assert(new Env(None, List("x"), List(42)).find("x") === 42, "Single defined variable")
-;    assert(new Env(None, List("x", "y"), List(42, 36)).find("x") === 42, "Find first variable")
-;    assert(new Env(None, List("x", "y"), List(42, 36)).find("y") === 36, "Find second variable")
-;    intercept[Exception] { new Env(None, List("x"), List(42)).find("y") }
-;  }
-;
-;  test("Access unknown symbols") {
-;    intercept[Exception] { evalStr("x") }
-;    intercept[Exception] { evalStr("(begin (define x 42) y)") }
-;  }
-
 (deftest test-default-env
   (is (= ((default-env "+") 2 3) 5))
   (is (= ((default-env "*") 2 3) 6))
@@ -176,7 +159,7 @@
 
 (defn eval-str [str]
   (let [[values newEnv] (eval-exp (get (parse (tokenize str)) 0) env)]
-    ;(println values ":" newEnv)
+    (println "--- " values ":" newEnv)
     values))
 
 (deftest access-unknown-symbols
@@ -247,6 +230,11 @@
     (is (eval-str "(eq? (quote (a b)) (quote (a b)))")))
   (testing "eq? should evaluate arguments"
     (is (eval-str "(eq? (+ 1 2) (+ 2 1))"))))
+
+(eval-str "(+ 1 2)")
+(eval-str "(eq? (+ 1 2) (+ 2 1))")
+(eval-str "(eq? (+ 1 2) (+ 2 1))")
+
 
 (deftest eval-eq?-invalid-arguments
   (is (thrown? IllegalArgumentException (eval-str "(eq?)")))
@@ -418,6 +406,9 @@
 
 (deftest eval-lambda-simple-cases
   (def l (eval-str "(lambda () 42)"))
+  (eval-exp [["lambda" [] 42]] {})
+  (eval-str "((lambda () 42))")
+  (eval-str "((lambda (x) x) 3.14)")
   (testing "Lambda with no parameters return number called on returned closure"
     (is (= (l '()) 42)))
   (testing "Lambda with no parameters return number"
@@ -438,7 +429,7 @@
 
 (deftest eval-lambda-with-procedure-calls
   (testing  "Lambda with single parameter returns square of parameter"
-    (is (= (eval-str "((lambda (x) (* x x)) 4))") 16)))
+    (is (= (eval-str "((lambda (x) (* x x)) 4)") 16)))
   (testing  "Lambda assigned to symbol then used"
     (is (= (eval-str "(begin (define square (lambda (x) (* x x))) (square 4))") 16))))
 
@@ -475,6 +466,11 @@
                   (define factorial (lambda (n) (if (<= n 1) 1 (* n (factorial (- n 1))))))
                   (factorial 6))")
   (is (= (eval-str code) 720)))
+
+  (eval-str "(begin
+                  (define factorial (lambda (n) (if (<= n 1) 1 (* n (factorial (- n 1))))))
+                  (factorial 6))")
+
 
 (deftest square-roots-by-newton's-method
   (def code "(begin

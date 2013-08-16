@@ -21,12 +21,10 @@
 (def default-env
   { "+" +, "-" -, "*" *, "/" /, "<" <, "<=" <=, ">" >, ">=" >=, "=" = })
 
-; Return an environment that includes the new value. 
+; Return an environment that includes the new value.
 (defn env-set [symbol value env]
   (fn [sym]
-    (if (= sym symbol) 
-      value
-      (env sym))))
+    (if (= sym symbol) value (env sym))))
 
 ; Return an environment that will perform lookups in the 'inner' environment first,
 ; then look it up in the outer if no result was found.
@@ -40,16 +38,17 @@
 (defn error-if [has-error message]
   (if has-error (error message)))
 
-; [single expression, environment map] -> [result of evaluation, updated environment map]
-(defn eval-exp [expr env]
+(declare eval-exprs)
+
+; [expression, environment] -> [result of evaluation, updated environment]
+(defn eval-exp [expr env] (do (println "* EVAL: " expr)
   (match [expr]
-    [(s :guard string?)] (if (contains? env s)
-                           [(get env s) env]
-                           (error("Unknown symbol '" s "'")))
+    [(s :guard string?)] (if (env s)
+                           [(env s) env]
+                           (error (str "Unknown symbol '" s "'")))
     
     [[ (:or "q" "quote") & args ]] (let [[arg1 arg2] args
-                                         _ (error-if (or (nil? arg1) arg2) "Exactly one argument excpected for 'quote'")
-                                         ]
+                                         _ (error-if (or (nil? arg1) arg2) "Exactly one argument excpected for 'quote'")]
                                      [(first args) env])
     
     [[ "atom" & args ]] (let [[arg1 arg2] args
@@ -100,36 +99,86 @@
                             (error-if (not prevValue) (str "Uknown symbol '" sym "'"))
                             [prevValue (conj newEnv [sym res])]))
                             
-     [["begin" & args]] (do
+    [["begin" & args]]  (do
                           (error-if (empty? args) "Must provide at least one expression for 'begin'")
                           (loop [exprs args
-                                 previousEnv env]
-                            (let [[res updatedEnv] (eval-exp (first exprs) previousEnv)
-                                  remainingArgs (rest exprs)]
-                              (if (empty? remainingArgs) 
+                                 previous-env env]
+                            (let [[res updatedEnv] (eval-exp (first exprs) previous-env)
+                                  remaining-args (rest exprs)]
+                              (if (empty? remaining-args) 
                                 [res updatedEnv]
-                                (recur remainingArgs updatedEnv)))))
+                                (recur remaining-args updatedEnv)))))
      
     [["if" & args]] (let [[test-exp conseq alt rest] args
-                          _ (error-if (or (nil? test-exp) (nil? conseq) (nil? alt) rest) "Expect three arguments for 'if'")
+                          _ (error-if (or (nil? test-exp) (nil? conseq) (nil? alt) rest) "Expected three arguments for 'if'")
                           [test-result newEnv] (eval-exp test-exp env)]
                           (println test-result)
                           (if test-result 
                             (eval-exp conseq newEnv) 
                             (eval-exp alt newEnv)))
     
-    [["lambda" & args]] (let [[params exprs] args
-                              
-                              ])
-     
-    ; TODO: have a block for all cases that take args that need to be evaluated, and evaluate them 
-    ; all together before proceeding? Then again, I want to do error checking first... and that depends on how
-    ; many args each form takes.
+    [["lambda" & args]] (let [[arg-names lambda-expr rest] args
+                              _ (error-if (or (nil? arg-names) (nil? lambda-expr) rest) "Expected two arguments for 'lambda'")
+                              lambda (fn [& arg-values]
+                                       (println "Calling lambda with arg values: " arg-values)
+                                       (let [new-env (zipmap arg-names arg-values)]
+                                         (println "evalling expr: " lambda-expr) ;; ", new-env: " new-env)
+                                         (let [[lambda-result lambda-result-env] (eval-exp lambda-expr (wrap-env new-env env))]
+                                           (println "lambda-result: " lambda-result)
+                                           lambda-result)
+                                       ))
+                              _ (println "Defined lambda: " lambda)
+                              ]
+                          [lambda env])
     
-    ; TODO: Change error-if to take varargs of booleans? Or doesn't that go well with the msg? Maybe a list then?
+;    [[ procedure & args]] (do
+;                            (println "Applying proc: " procedure " with args " args)
+;                            [(apply procedure args) env]) 
     
-    :else [expr env]))
+    :else (do
+            (if (coll? expr) (println "procedure call: " expr))
+            (if (coll? expr)
+              (let [[evalled-args _](eval-exprs expr env)
+                    _ (println "post-evalled procedure args: >>> " evalled-args)
+                    proc (first evalled-args)
+                    proc-args (rest evalled-args)
+                    _ (println "Applying procedure: " proc " with args " proc-args)
+                    result (apply proc proc-args)
+                    _ (println "Procedure result: " result)
+                    ]
+                [result env])
+                ;result)
+              (do 
+                (println "returning simple value: " expr)
+                [expr env])))
+    ))
+); do
 
+; Evaluates all given expressions, chaining the environment returned by each evaluation
+; through to the next one. Returns [list of results of the evaluation, final environment]
+; It's basically a map - except we have to pass the updated environments along. 
+; Can we do this more neatly?
+; Also - reuse this in 'begin'? Just select the tail of the result from this along with the env.
+(defn eval-exprs [exprs env]
+  (loop [es exprs
+         previous-env env
+         results []]
+    ;(println "loop exprs: " es ", results: " results)
+    (if (empty? es)
+      [results previous-env]
+      (let [[res updatedEnv] (eval-exp (first es) previous-env)]
+        (recur (rest es) updatedEnv (conj results res)))))
+  )
+
+; TODO: have a block for all cases that take args that need to be evaluated, and evaluate them 
+; all together before proceeding? Then again, I want to do error checking first... and that depends on how
+; many args each form takes.
+
+; TODO: Change error-if to take varargs of booleans? Or doesn't that go well with the msg? Maybe a list then?
+; Or better: overload with taking a single vs. a sequence as arguments?
+
+
+; TODO: Reconsider the use of the try-or macro here, as there are only two cases now. Wrap in a function instead?
 (defn parse-atom [str]
   (cond 
     (= "true" str) true
