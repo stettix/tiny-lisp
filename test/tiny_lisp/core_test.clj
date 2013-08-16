@@ -231,11 +231,6 @@
   (testing "eq? should evaluate arguments"
     (is (eval-str "(eq? (+ 1 2) (+ 2 1))"))))
 
-(eval-str "(+ 1 2)")
-(eval-str "(eq? (+ 1 2) (+ 2 1))")
-(eval-str "(eq? (+ 1 2) (+ 2 1))")
-
-
 (deftest eval-eq?-invalid-arguments
   (is (thrown? IllegalArgumentException (eval-str "(eq?)")))
   (is (thrown? IllegalArgumentException (eval-str "(eq? 1)")))
@@ -453,13 +448,13 @@
     (is (= (eval-str code2) 7)))
   )
 
-(defn evalMultipleStr [str]
+(defn eval-multiple-str [str]
   (def exprs (parse (tokenize str)))
   (map #(eval % env) exprs))
 
 (deftest eval-program-of-multiple-expressions
   (testing "Multiple literal expressions on one line"
-    (is (= (evalMultipleStr("1 2 3") '(1 2 3))))))
+    (is (= (eval-multiple-str("1 2 3") '(1 2 3))))))
 
 (deftest recurisve-factorial-function
   (def code "(begin
@@ -467,9 +462,9 @@
                   (factorial 6))")
   (is (= (eval-str code) 720)))
 
-  (eval-str "(begin
-                  (define factorial (lambda (n) (if (<= n 1) 1 (* n (factorial (- n 1))))))
-                  (factorial 6))")
+;  (eval-str "(begin
+;                  (define factorial (lambda (n) (if (<= n 1) 1 (* n (factorial (- n 1))))))
+;                  (factorial 6))")
 
 
 (deftest square-roots-by-newton's-method

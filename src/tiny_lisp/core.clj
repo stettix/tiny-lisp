@@ -58,9 +58,9 @@
     
     [[ "eq?" & args ]] (let [[arg1 arg2 arg3] args
                              _ (error-if (or (nil? arg1) (nil? arg2) arg3) "Exactly two arguments excpected for 'eq?'")
-                             ]
-                         ; TODO: Shouldn't these be evalled?
-                         [(= arg1 arg2) env])
+                             [res1 env1] (eval-exp arg1 env)
+                             [res2 env2] (eval-exp arg2 env1)]
+                           [(= res1 res2) env2])
     
     [[ "null?" & args ]] (let [[arg1 arg2] args
                                _ (error-if (or (nil? arg1) arg2) "Exactly one argument excpected for 'null?'")
