@@ -77,10 +77,9 @@
     
     [["cons" & args]] (let [[arg1 arg2 arg3] args
                               _ (error-if arg3 "Exactly two arguments excpected for 'cdr'")
-                              [res1 newEnv] (eval-exp arg1 env)
-                              [res2 newEnv2] (eval-exp arg2 newEnv)]
-                          (error-if (not (coll? res2)) "Second argument to 'cons' must be a list")
-                          [(cons res1 res2) env])
+                              [[res1 res2] env] (eval-exprs [arg1 arg2] env)]
+                        (error-if (not (coll? res2)) "Second argument to 'cons' must be a list")
+                        [(cons res1 res2) env])
     
     [["define" & args]] (let [[sym arg rest] args
                               _ (error-if (or (not (string? sym)) (nil? arg) rest) 
@@ -109,33 +108,22 @@
     [["lambda" & args]] (let [[arg-names lambda-expr rest] args
                               _ (error-if (or (nil? arg-names) (nil? lambda-expr) rest) "Expected two arguments for 'lambda'")
                               lambda (fn [& arg-values]
-                                       (println "Calling lambda with arg values: " arg-values)
                                        (let [args-env (zipmap arg-names arg-values)
                                              new-env (wrap-env args-env env)]
-                                         (println "evalling expr: " lambda-expr ", new-env: " new-env)
                                          (let [[lambda-result lambda-result-env] (eval-exp lambda-expr new-env)]
-                                           (println "lambda-result: " lambda-result)
                                            lambda-result)
-                                       ))
-                              ]
+                                         ))]
                           [lambda env])
     
-    :else (do
-            (if (coll? expr) (println "procedure call: " expr))
-            (if (coll? expr)
-              (let [[evalled-args _](eval-exprs expr env)
-                    _ (println "post-evalled procedure args: >>> " evalled-args)
-                    proc (first evalled-args)
-                    proc-args (rest evalled-args)
-                    _ (println "Applying procedure: " proc " with args " proc-args)
-                    result (apply proc proc-args)
-                    _ (println "Procedure result: " result)
-                    ]
-                [result env])
-                ;result)
-              (do 
-                (println "returning simple value: " expr)
-                [expr env])))
+    :else (if (coll? expr)
+            ;; Evaluate procedure call.
+            (let [[evalled-args _](eval-exprs expr env)
+                  proc (first evalled-args)
+                  proc-args (rest evalled-args)
+                  result (apply proc proc-args)]
+              [result env])
+            ;; Simple value evaluates as itself.
+            [expr env])
     ))
 
 ; Evaluates all given expressions, chaining the environment returned by each evaluation
