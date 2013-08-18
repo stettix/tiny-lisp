@@ -13,24 +13,20 @@
        (catch Exception e#
          (try-or ~@forms)))))
 
-; Define an environment as a function that returns the value of a named symbol.
-; Maps work nicely as such functions.
+; Represent environment as maps that map symbol names to values.
 (def empty-env {})
 
 ; A basic set of operations.
-(def default-env
+(def default-env 
   { "+" +, "-" -, "*" *, "/" /, "<" <, "<=" <=, ">" >, ">=" >=, "=" = })
 
 ; Return an environment that includes the new value.
-(defn env-set [symbol value env]
-  (fn [sym]
-    (if (= sym symbol) value (env sym))))
+(defn env-set [env symbol value] 
+    (assoc env symbol value))
 
-; Return an environment that will perform lookups in the 'inner' environment first,
-; then look it up in the outer if no result was found.
-(defn wrap-env [inner-env outer-env]
-  (fn [sym] 
-    (or (inner-env sym) (outer-env sym))))
+; Return an environment where the 'inner' environment takes precedence, then the 'outer'.
+(defn wrap-env [inner-env outer-env] 
+  (merge outer-env inner-env))
 
 (defn error [message]
   (throw (IllegalArgumentException. message)))
@@ -41,7 +37,7 @@
 (declare eval-exprs)
 
 ; [expression, environment] -> [result of evaluation, updated environment]
-(defn eval-exp [expr env] (do (println "* EVAL: " expr)
+(defn eval-exp [expr env]
   (match [expr]
     [(s :guard string?)] (if (env s)
                            [(env s) env]
@@ -90,27 +86,18 @@
                               _ (error-if (or (not (string? sym)) (nil? arg) rest) 
                                   "Exactly two arguments excpected for 'define'")
                               [res newEnv] (eval-exp arg env)]
-                          [sym (env-set sym res newEnv)])
+                          [sym (env-set newEnv sym res)])
     
     [["set!" & args]] (let [[sym arg arg3] args
                             _ (error-if arg3 "Exactly two arguments excpected for 'set!'")
                             [res newEnv] (eval-exp arg env)]
                         (let [prevValue (env sym)]
-                          (error-if (not prevValue) (str "Uknown symbol '" sym "'"))
-                          [prevValue (env-set sym res newEnv)]))
+                          (error-if (not prevValue) (str "Unknown symbol '" sym "'"))
+                          [prevValue (env-set newEnv sym res)]))
                             
-    [["begin" & args]]  (do
-                          (error-if (empty? args) "Must provide at least one expression for 'begin'")
-                          (let [[results new-env] (eval-exprs args env)]
-                            [(last results) new-env]
-                            ))
-;                          (loop [exprs args
-;                                 previous-env env]
-;                            (let [[res updatedEnv] (eval-exp (first exprs) previous-env)
-;                                  remaining-args (rest exprs)]
-;                              (if (empty? remaining-args) 
-;                                [res updatedEnv]
-;                                (recur remaining-args updatedEnv)))))
+    [["begin" & args]]  (let [_ (error-if (empty? args) "Must provide at least one expression for 'begin'")
+                              [results new-env] (eval-exprs args env)]
+                              [(last results) new-env])
      
     [["if" & args]] (let [[test-exp conseq alt rest] args
                           _ (error-if (or (nil? test-exp) (nil? conseq) (nil? alt) rest) "Expected three arguments for 'if'")
@@ -123,18 +110,15 @@
                               _ (error-if (or (nil? arg-names) (nil? lambda-expr) rest) "Expected two arguments for 'lambda'")
                               lambda (fn [& arg-values]
                                        (println "Calling lambda with arg values: " arg-values)
-                                       (let [new-env (zipmap arg-names arg-values)]
-                                         (println "evalling expr: " lambda-expr) ;; ", new-env: " new-env)
-                                         (let [[lambda-result lambda-result-env] (eval-exp lambda-expr (wrap-env new-env env))]
+                                       (let [args-env (zipmap arg-names arg-values)
+                                             new-env (wrap-env args-env env)]
+                                         (println "evalling expr: " lambda-expr ", new-env: " new-env)
+                                         (let [[lambda-result lambda-result-env] (eval-exp lambda-expr new-env)]
                                            (println "lambda-result: " lambda-result)
                                            lambda-result)
                                        ))
                               ]
                           [lambda env])
-    
-;    [[procedure & args]] (do
-;                            (println "Applying proc: " procedure " with args " args)
-;                            [(apply procedure args) env]) 
     
     :else (do
             (if (coll? expr) (println "procedure call: " expr))
@@ -153,18 +137,15 @@
                 (println "returning simple value: " expr)
                 [expr env])))
     ))
-); do
 
 ; Evaluates all given expressions, chaining the environment returned by each evaluation
 ; through to the next one. Returns [list of results of the evaluation, final environment]
 ; It's basically a map - except we have to pass the updated environments along. 
 ; Can we do this more neatly?
-; Also - reuse this in 'begin'? Just select the tail of the result from this along with the env.
 (defn eval-exprs [exprs env]
   (loop [es exprs
          previous-env env
          results []]
-    ;(println "loop exprs: " es ", results: " results)
     (if (empty? es)
       [results previous-env]
       (let [[res updatedEnv] (eval-exp (first es) previous-env)]
@@ -177,7 +158,6 @@
 
 ; TODO: Change error-if to take varargs of booleans? Or doesn't that go well with the msg? Maybe a list then?
 ; Or better: overload with taking a single vs. a sequence as arguments?
-
 
 ; TODO: Reconsider the use of the try-or macro here, as there are only two cases now. Wrap in a function instead?
 (defn parse-atom [str]

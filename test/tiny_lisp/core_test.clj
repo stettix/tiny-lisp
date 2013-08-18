@@ -27,13 +27,13 @@
   )
 
 (deftest test-env-set
-  (let [e (env-set "x" 42 default-env)]
+  (let [e (env-set default-env "x" 42)]
     (is (= 42 (e "x")))
     (is (= ((e "+") 2 3) 5))
     )
-  (let [e1 (env-set "x" 42 empty-env)
-        e2 (env-set "x" 7 e1)
-        e3 (env-set "y" "foo" e2)]
+  (let [e1 (env-set empty-env "x" 42)
+        e2 (env-set e1 "x" 7)
+        e3 (env-set e2 "y" "foo")]
     (is (= 42 (e1 "x")))
     (is (nil? (e1 "y")))
     (is (= 7 (e2 "x")))
@@ -474,11 +474,11 @@
 
 (defn eval-multiple-str [str]
   (def exprs (parse (tokenize str)))
-  (map #(eval % env) exprs))
+  (map #(eval-exp % env) exprs))
 
 (deftest eval-program-of-multiple-expressions
   (testing "Multiple literal expressions on one line"
-    (is (= (eval-multiple-str("1 2 3") '(1 2 3))))))
+    (is (= (map first (eval-multiple-str "1 2 3")) '(1 2 3)))))
 
 (deftest recursive-factorial-function
   (def code "(begin
@@ -496,6 +496,6 @@
 	                  (define improve (lambda (guess x) (average guess (/ x guess))))
 	                  (define average (lambda (x y) (* 0.5 (+ x y))))
 	                  (sqrt 2))")
-  (def squareRootOfTwo (eval-str(code)))
+  (def squareRootOfTwo (eval-str code))
   (is (< (- (java.lang.Math/abs squareRootOfTwo) 1.41421)) 0.0001))
 
