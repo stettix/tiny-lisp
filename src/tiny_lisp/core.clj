@@ -13,20 +13,26 @@
        (catch Exception e#
          (try-or ~@forms)))))
 
-; Represent environment as maps that map symbol names to values.
+; Define an environment as a function that returns the value of a named symbol.
+; Maps work nicely as such functions.
 (def empty-env {})
 
 ; A basic set of operations.
 (def default-env 
   { "+" +, "-" -, "*" *, "/" /, "<" <, "<=" <=, ">" >, ">=" >=, "=" = })
 
-; Return an environment that includes the new value.
-(defn env-set [env symbol value] 
-    (assoc env symbol value))
+; Return an environment that includes the new value. 
+(defn env-set [env symbol value]
+  (fn [sym]
+    (if (= sym symbol) 
+      value
+      (env sym))))
 
-; Return an environment where the 'inner' environment takes precedence, then the 'outer'.
-(defn wrap-env [inner-env outer-env] 
-  (merge outer-env inner-env))
+; Return an environment that will perform lookups in the 'inner' environment first,
+; then look it up in the outer if no result was found.
+(defn wrap-env [inner-env outer-env]
+  (fn [sym] 
+    (or (inner-env sym) (outer-env sym))))
 
 (defn error [message]
   (throw (IllegalArgumentException. message)))
@@ -34,7 +40,7 @@
 (defn error-if [has-error message]
   (if has-error (error message)))
 
-(declare eval-exprs)
+(declare eval-exprs define-lambda)
 
 ; [expression, environment] -> [result of evaluation, updated environment]
 (defn eval-exp [expr env]
@@ -76,7 +82,7 @@
                          [(rest res) newEnv])
     
     [["cons" & args]] (let [[arg1 arg2 arg3] args
-                              _ (error-if arg3 "Exactly two arguments excpected for 'cdr'")
+                              _ (error-if arg3 "Exactly two arguments excpected for 'cons'")
                               [[res1 res2] env] (eval-exprs [arg1 arg2] env)]
                         (error-if (not (coll? res2)) "Second argument to 'cons' must be a list")
                         [(cons res1 res2) env])
@@ -107,17 +113,30 @@
     
     [["lambda" & args]] (let [[arg-names lambda-expr rest] args
                               _ (error-if (or (nil? arg-names) (nil? lambda-expr) rest) "Expected two arguments for 'lambda'")
-                              lambda (fn [& arg-values]
-                                       (let [args-env (zipmap arg-names arg-values)
-                                             new-env (wrap-env args-env env)]
-                                         (let [[lambda-result lambda-result-env] (eval-exp lambda-expr new-env)]
-                                           lambda-result)
-                                         ))]
+                              lambda (define-lambda arg-names lambda-expr env)
+                              ]
                           [lambda env])
+
+    [["defn" & args]] (let [[name arg-names fun-expr rest] args
+                            _ (error-if (or (not (string? name)) (not fun-expr) rest)
+                                          "Exactly three arguments excpected for 'defn'")
+                            
+                            ; Define mutable reference to lambda function itself,
+                            ; to enable recursive calls.
+                            lambda-ref (atom nil)
+                            env-lookup (fn [symbol]
+                                         (if (= symbol name)
+                                           @lambda-ref
+                                           (env symbol)))
+                                           
+                            lambda (define-lambda arg-names fun-expr env-lookup)
+                            ]
+                        (reset! lambda-ref lambda)
+                        [lambda env-lookup])
     
     :else (if (coll? expr)
             ;; Evaluate procedure call.
-            (let [[evalled-args _](eval-exprs expr env)
+            (let [[evalled-args _] (eval-exprs expr env)
                   proc (first evalled-args)
                   proc-args (rest evalled-args)
                   result (apply proc proc-args)]
@@ -126,9 +145,18 @@
             [expr env])
     ))
 
+; Returns a function that takes the given arguments and evaluates the given expression.
+(defn define-lambda [arg-names lambda-expr env]
+  (fn [& arg-values]
+    (let [args-env (zipmap arg-names arg-values)
+          new-env (wrap-env args-env env)]
+      (let [[lambda-result lambda-result-env] (eval-exp lambda-expr new-env)]
+        lambda-result)
+      )))
+
 ; Evaluates all given expressions, chaining the environment returned by each evaluation
 ; through to the next one. Returns [list of results of the evaluation, final environment]
-; It's basically a map - except we have to pass the updated environments along. 
+; It's basically a 'map' operation - except we have to pass the updated environment along. 
 ; Can we do this more neatly?
 (defn eval-exprs [exprs env]
   (loop [es exprs

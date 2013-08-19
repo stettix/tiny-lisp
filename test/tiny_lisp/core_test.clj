@@ -425,11 +425,8 @@
 
 (deftest eval-lambda-simple-cases
   (def l (eval-str "(lambda () 42)"))
-  (eval-exp [["lambda" [] 42]] {})
-  (eval-str "((lambda () 42))")
-  (eval-str "((lambda (x) x) 3.14)")
   (testing "Lambda with no parameters return number called on returned closure"
-    (is (= (l '()) 42)))
+    (is (= (l) 42)))
   (testing "Lambda with no parameters return number"
     (is (= (eval-str "((lambda () 42))") 42)))
   (testing "Lambda with single parameter returns that parameter (number)"
@@ -455,6 +452,32 @@
 (deftest eval-unknown-procedure-call
   (is (thrown? IllegalArgumentException (eval-str "(foo)")))
   (is (thrown? IllegalArgumentException (eval-str "(foo 1 2 3)"))))
+
+(deftest test-defn-basic-cases
+  (let [[f env] (eval-str-full "(defn func () 42)" default-env)]
+    (testing "Function with no parameters return number called on returned closure"
+      (is (= (f) 42)))
+    (testing "Function should be defined in returned environment under the given name"
+      (is env "func"))
+    
+    (let [[f2 env2] (eval-str-full "(defn func2 (x) (* 2 x))" env)]
+      (testing "Function with parameters"
+        (is (= (f2 3) 6)))
+      (testing "Function should be defined in returned environment under the given name"
+        (is env2 "func2"))
+      (testing "Previous function definition should be retained"
+        (is env2 "func")
+        (is env2 "func2"))
+      )
+    ))
+
+(deftest test-defn-example
+  (def code "(begin
+                 (defn func (x) (* 2 x))
+                 (func 5))")
+  (testing "Argument to lambda is different from variable in outer environment"
+    (is (= (eval-str code) 10)))
+  )
 
 (deftest symbol-defined-in-nested-environment
   (def code "(begin
@@ -482,20 +505,20 @@
 
 (deftest recursive-factorial-function
   (def code "(begin
-               (define factorial (lambda (n) (if (<= n 1) 1 (* n (factorial (- n 1))))))
+               (defn factorial (n)  (if (<= n 1) 1 (* n (factorial (- n 1)))))
                (factorial 6))")
   (is (= (eval-str code) 720)))
 
 (deftest square-roots-by-newton's-method
   (def code "(begin
-                 (define sqrt (lambda (x) (sqrt-iter 1 x)))
-					       (define sqrt-iter (lambda (guess x) (if (good-enough? guess x) guess (sqrt-iter (improve guess x) x))))
-	                  (define good-enough? (lambda (guess x) (< (abs (- x (square guess))) 0.00001)))
-	                  (define abs (lambda (x) (if (< 0 x) x (- 0 x))))
-	                  (define square (lambda (x) (* x x)))
-	                  (define improve (lambda (guess x) (average guess (/ x guess))))
-	                  (define average (lambda (x y) (* 0.5 (+ x y))))
-	                  (sqrt 2))")
+	             (defn abs (x) (if (< 0 x) x (- 0 x)))
+	             (defn square (x) (* x x))
+	             (defn average (x y) (* 0.5 (+ x y)))
+	             (defn improve (guess x) (average guess (/ x guess)))
+	             (defn good-enough? (guess x) (< (abs (- x (square guess))) 0.00001))
+				       (defn sqrt-iter (guess x) (if (good-enough? guess x) guess (sqrt-iter (improve guess x) x)))
+               (defn sqrt (x) (sqrt-iter 1 x))
+	             (sqrt 2))")
   (def squareRootOfTwo (eval-str code))
   (is (< (- (java.lang.Math/abs squareRootOfTwo) 1.41421)) 0.0001))
 
