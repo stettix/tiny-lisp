@@ -337,15 +337,15 @@
 
 (deftest eval-cond-valid-cases
   (testing  "'cond' with first condition matching"
-    (is (= (eval-str "(cond (true 42) (false 36))") 42)))
+    (is (= (eval-str "(cond true 42 false 36)") 42)))
   (testing "'cond' with second condition matching"
-    (is (= (eval-str "(cond (false 42) (true 36))") 36)))
+    (is (= (eval-str "(cond false 42 true 36)") 36)))
   (testing "'cond' with calculated predicate"
-    (is (= (eval-str "(cond ((< 1 2) 42))") 42)))
+    (is (= (eval-str "(cond (< 1 2) 42)") 42)))
   (testing "'cond' with calculated predicates"
-    (is (= (eval-str "(cond ((> 1 2) 36) ((< 1 2) 42))") 42)))
+    (is (= (eval-str "(cond (> 1 2) 36 (< 1 2) 42)") 42)))
   (testing "'cond' with calculated result expression"
-    (is (= (eval-str "(cond (true (* 2 21)))") 42))))
+    (is (= (eval-str "(cond true (* 2 21))") 42))))
 
 (deftest eval-cond-no-valid-condition-matching
   (is (thrown? Exception (eval-str "(cond (false 42))")))
@@ -353,8 +353,8 @@
 
 (deftest eval-cond-invalid-arguments
   (is (thrown? Exception (eval-str "(cond)")))
-  (is (thrown? IllegalArgumentException (eval-str "(cond (true))")))
-  (is (thrown? IllegalArgumentException (eval-str "(cond (false 42) (true))")))
+  (is (thrown? IllegalArgumentException (eval-str "(cond true)")))
+  (is (thrown? IllegalArgumentException (eval-str "(cond false 42 true)")))
   )
 
 (deftest eval-begin-simple-cases

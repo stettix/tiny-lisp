@@ -40,6 +40,9 @@
 (defn error-if [has-error message]
   (if has-error (error message)))
 
+(defn is-truthy [val]
+  (not (= false val)))
+
 (declare eval-exprs define-lambda)
 
 ; [expression, environment] -> [result of evaluation, updated environment]
@@ -107,9 +110,22 @@
     [["if" & args]] (let [[test-exp conseq alt rest] args
                           _ (error-if (or (nil? test-exp) (nil? conseq) (nil? alt) rest) "Expected three arguments for 'if'")
                           [test-result newEnv] (eval-exp test-exp env)]
-                          (if test-result 
+                          (if (is-truthy test-result)
                             (eval-exp conseq newEnv) 
                             (eval-exp alt newEnv)))
+    
+    [["cond" & args]] (let [_ (if (= 1 (mod (count args) 2)) (error "Odd number of arguments to 'cond'"))  
+                            cond-exprs (apply array-map args)]
+                        (loop [remaining-exprs cond-exprs
+                               previous-env env]
+                          (if (empty? remaining-exprs)
+                            (error (str "None of the conditions matched: " expr))
+                            (let [[cnd conseq] (first remaining-exprs)
+                                  [cnd-res new-env] (eval-exp cnd previous-env)]
+                              (if (is-truthy cnd-res)
+                                (let [[res new-env] (eval-exp conseq new-env)]
+                                  [res new-env])
+                                (recur (rest remaining-exprs) new-env))))))
     
     [["lambda" & args]] (let [[arg-names lambda-expr rest] args
                               _ (error-if (or (nil? arg-names) (nil? lambda-expr) rest) "Expected two arguments for 'lambda'")
@@ -144,6 +160,7 @@
             ;; Simple value evaluates as itself.
             [expr env])
     ))
+
 
 ; Returns a function that takes the given arguments and evaluates the given expression.
 (defn define-lambda [arg-names lambda-expr env]
@@ -208,7 +225,7 @@
   (remove #(string/blank? %) 
           (string/split (string/replace str #"([\(\)])" " $0 ") #"\s")))
 
-(defn expr->string [expr] 
+(defn expr->string [expr]
   (if (seq? expr) 
     (str "(" (string/join " " expr) ")")
     (.toString expr)))
