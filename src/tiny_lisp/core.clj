@@ -13,7 +13,7 @@
        (catch Exception e#
          (try-or ~@forms)))))
 
-; Define an environment as a function that returns the value of a named symbol.
+; We define an environment as a function that returns the value of a named symbol.
 ; Maps work nicely as such functions.
 (def empty-env {})
 
@@ -145,8 +145,7 @@
                                            @lambda-ref
                                            (env symbol)))
                                            
-                            lambda (define-lambda arg-names fun-expr env-lookup)
-                            ]
+                            lambda (define-lambda arg-names fun-expr env-lookup)]
                         (reset! lambda-ref lambda)
                         [lambda env-lookup])
     
@@ -160,7 +159,6 @@
             ;; Simple value evaluates as itself.
             [expr env])
     ))
-
 
 ; Returns a function that takes the given arguments and evaluates the given expression.
 (defn define-lambda [arg-names lambda-expr env]
@@ -184,13 +182,6 @@
       (let [[res updatedEnv] (eval-exp (first es) previous-env)]
         (recur (rest es) updatedEnv (conj results res)))))
   )
-
-; TODO: have a block for all cases that take args that need to be evaluated, and evaluate them 
-; all together before proceeding? Then again, I want to do error checking first... and that depends on how
-; many args each form takes.
-
-; TODO: Change error-if to take varargs of booleans? Or doesn't that go well with the msg? Maybe a list then?
-; Or better: overload with taking a single vs. a sequence as arguments?
 
 ; TODO: Reconsider the use of the try-or macro here, as there are only two cases now. Wrap in a function instead?
 (defn parse-atom [str]
