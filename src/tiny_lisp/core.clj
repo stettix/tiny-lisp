@@ -3,16 +3,6 @@
   (use [clojure.core.match :only (match)])
   (import (java.lang IllegalArgumentException)))
 
-(defmacro try-or
-  "See http://clj-me.cgrand.net/2009/01/08/try-or-or-try-try-else-or-else-try/" 
-  ([] nil)
-  ([form] form)
-  ([form & forms]
-    `(try 
-       ~form
-       (catch Exception e#
-         (try-or ~@forms)))))
-
 ; We define an environment as a function that returns the value of a named symbol.
 ; Maps work nicely as such functions.
 (def empty-env {})
@@ -188,11 +178,12 @@
   (cond 
     (= "true" str) true
     (= "false" str) false
-    :else (try-or 
-            (Long/parseLong str) 
-            (Double/parseDouble str) 
-            str)))
-
+    :else (try (Long/parseLong str) 
+            (catch NumberFormatException e 
+              (try (Double/parseDouble str)
+                (catch NumberFormatException e
+                  str))))))
+    
 ; list of token strings -> tuple of [parsed list, # of read tokens]
 (defn parse-list [tokens usedTokenCount aggr]
   (cond
