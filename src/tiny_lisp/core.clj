@@ -154,9 +154,7 @@
   (fn [& arg-values]
     (let [args-env (zipmap arg-names arg-values)
           new-env (wrap-env args-env env)]
-      (let [[lambda-result lambda-result-env] (eval-exp lambda-expr new-env)]
-        lambda-result)
-      )))
+      (first (eval-exp lambda-expr new-env)))))
 
 ; Evaluates all given expressions, chaining the environment returned by each evaluation
 ; through to the next one. Returns [list of results of the evaluation, final environment]
@@ -169,10 +167,8 @@
     (if (empty? es)
       [results previous-env]
       (let [[res updatedEnv] (eval-exp (first es) previous-env)]
-        (recur (rest es) updatedEnv (conj results res)))))
-  )
+        (recur (rest es) updatedEnv (conj results res))))))
 
-; TODO: Reconsider the use of the try-or macro here, as there are only two cases now. Wrap in a function instead?
 (defn parse-atom [str]
   (cond 
     (= "true" str) true
