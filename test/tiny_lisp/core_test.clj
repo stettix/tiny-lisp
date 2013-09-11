@@ -31,7 +31,7 @@
     (is (= 42 (e "x")))
     (is (= ((e "+") 2 3) 5))
     )
-  (let [e1 (env-set empty-env "x" 42)
+  (let [e1 (env-set {} "x" 42)
         e2 (env-set e1 "x" 7)
         e3 (env-set e2 "y" "foo")]
     (is (= 42 (e1 "x")))
@@ -380,7 +380,7 @@
   ; We match the behaviour of MIT/GNU Scheme instead.
   (testing "simple define expression should return the defined symbol"
     (is (= (eval-str "(define x 42)") "x"))
-    (let [[res new-env] (eval-str-full "(define x 42)" empty-env)]
+    (let [[res new-env] (eval-str-full "(define x 42)" {})]
       (is (= res "x"))
       (is (= (new-env "x") 42)))
     ))

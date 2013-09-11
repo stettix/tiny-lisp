@@ -1,13 +1,12 @@
 (ns tiny-lisp.core
   (require [clojure.string :as string])
   (use [clojure.core.match :only (match)])
-  (import (java.lang IllegalArgumentException)))
+  (import (java.lang IllegalArgumentException))
+  (:gen-class))
 
 ; We define an environment as a function that returns the value of a named symbol.
 ; Maps work nicely as such functions.
-(def empty-env {})
-
-; A basic set of operations.
+; The default environment contains a basic set of operations.
 (def default-env 
   { "+" +, "-" -, "*" *, "/" /, "<" <, "<=" <=, ">" >, ">=" >=, "=" = })
 
@@ -212,10 +211,26 @@
     (str "(" (string/join " " expr) ")")
     (.toString expr)))
 
+(defn result-or-error [func env]
+  (try (func) 
+    (catch Exception e [(str "Error: " (.getMessage e)) env])))  
+
+(defn prompt []
+  (print "==> ")
+  (flush))
+
 (defn repl []
   (println "Welcome to tiny-lisp!")
-  ; TODO: Provide a prompt for each line...
-  (doseq [line (line-seq (java.io.BufferedReader. *in*))]
-    (println (expr->string (eval-exp (parse (tokenize line)))))
+  (prompt)
+  (let [input-lines (line-seq (java.io.BufferedReader. *in*))]
+    (loop [lines input-lines
+           current-env default-env]
+      (if (not (empty? lines))
+        (let [[result new-env] (result-or-error #(eval-exp (first (parse (tokenize (first lines)))) current-env) current-env)]
+          (println (expr->string result))
+          (prompt)
+          (recur (rest lines) new-env))))
     ))
 
+(defn -main []
+  (repl))
