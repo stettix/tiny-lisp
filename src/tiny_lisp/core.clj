@@ -222,7 +222,9 @@
            current-env default-env]
       (if (not (empty? lines))
         (let [[result new-env] (result-or-error #(eval-exp (first (parse (tokenize (first lines)))) current-env) current-env)]
-          (println (expr->string result))
+          (println (if (nil? result) 
+                     "" 
+                     (expr->string result)))
           (prompt)
           (recur (rest lines) new-env))))
     ))
