@@ -42,39 +42,39 @@
                            (error (str "Unknown symbol '" s "'")))
     
     [[(:or "q" "quote") & args]] (let [[arg1 arg2] args
-                                         _ (error-if (or (nil? arg1) arg2) "Exactly one argument excpected for 'quote'")]
+                                         _ (error-if (or (nil? arg1) arg2) "Exactly one argument expected for 'quote'")]
                                      [(first args) env])
     
     [["atom" & args]] (let [[arg1 arg2] args
-                              _ (error-if (or (nil? arg1) arg2) "Exactly one argument excpected for 'atom'")
+                              _ (error-if (or (nil? arg1) arg2) "Exactly one argument expected for 'atom'")
                               [res newEnv] (eval-exp arg1 env)]
                           [(not (coll? res)), newEnv])
     
     [["eq?" & args]] (let [[arg1 arg2 arg3] args
-                             _ (error-if (or (nil? arg1) (nil? arg2) arg3) "Exactly two arguments excpected for 'eq?'")
+                             _ (error-if (or (nil? arg1) (nil? arg2) arg3) "Exactly two arguments expected for 'eq?'")
                              [res1 env1] (eval-exp arg1 env)
                              [res2 env2] (eval-exp arg2 env1)]
                            [(= res1 res2) env2])
     
     [["null?" & args]] (let [[arg1 arg2] args
-                               _ (error-if (or (nil? arg1) arg2) "Exactly one argument excpected for 'null?'")
+                               _ (error-if (or (nil? arg1) arg2) "Exactly one argument expected for 'null?'")
                                [res newEnv] (eval-exp arg1 env)]
                            [(= [] res) newEnv])
     
     [["car" & args]] (let [[arg1 arg2] args
-                             _ (error-if (or (nil? arg1) arg2) "Exactly one argument excpected for 'car'")
+                             _ (error-if (or (nil? arg1) arg2) "Exactly one argument expected for 'car'")
                              [res newEnv] (eval-exp arg1 env)
                              _ (error-if (empty? res) "Argument to 'car' must be a non-empty list")]
                          [(first res) newEnv])
     
     [["cdr" & args]] (let [[arg1 arg2] args
-                             _ (error-if (or (nil? arg1) arg2) "Exactly one argument excpected for 'cdr'")
+                             _ (error-if (or (nil? arg1) arg2) "Exactly one argument expected for 'cdr'")
                              [res newEnv] (eval-exp arg1 env)
                              _ (error-if (empty? res) "Argument to 'cdr' must be a non-empty list")]
                          [(rest res) newEnv])
     
     [["cons" & args]] (let [[arg1 arg2 arg3] args
-                              _ (error-if arg3 "Exactly two arguments excpected for 'cons'")
+                              _ (error-if arg3 "Exactly two arguments expected for 'cons'")
                               [res1 _] (eval-exp arg1 env)
                               [res2 _] (eval-exp arg2 env)]
                         (error-if (not (coll? res2)) "Second argument to 'cons' must be a list")
@@ -82,12 +82,12 @@
     
     [["define" & args]] (let [[sym arg rest] args
                               _ (error-if (or (not (string? sym)) (nil? arg) rest) 
-                                  "Exactly two arguments excpected for 'define'")
+                                  "Exactly two arguments expected for 'define'")
                               [res newEnv] (eval-exp arg env)]
                           [sym (env-set newEnv sym res)])
     
     [["set!" & args]] (let [[sym arg arg3] args
-                            _ (error-if arg3 "Exactly two arguments excpected for 'set!'")
+                            _ (error-if arg3 "Exactly two arguments expected for 'set!'")
                             [res newEnv] (eval-exp arg env)]
                         (let [prevValue (env sym)]
                           (error-if (not prevValue) (str "Unknown symbol '" sym "'"))
@@ -124,7 +124,7 @@
 
     [["defn" & args]] (let [[name arg-names fun-expr rest] args
                             _ (error-if (or (not (string? name)) (not fun-expr) rest)
-                                          "Exactly three arguments excpected for 'defn'")
+                                          "Exactly three arguments expected for 'defn'")
                             
                             ; Define mutable reference to lambda function itself,
                             ; to enable recursive calls.
