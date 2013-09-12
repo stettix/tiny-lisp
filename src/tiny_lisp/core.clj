@@ -75,7 +75,8 @@
     
     [["cons" & args]] (let [[arg1 arg2 arg3] args
                               _ (error-if arg3 "Exactly two arguments excpected for 'cons'")
-                              [[res1 res2] env] (eval-exprs [arg1 arg2] env)]
+                              [res1 _] (eval-exp arg1 env)
+                              [res2 _] (eval-exp arg2 env)]
                         (error-if (not (coll? res2)) "Second argument to 'cons' must be a list")
                         [(cons res1 res2) env])
     
@@ -105,16 +106,15 @@
     
     [["cond" & args]] (let [_ (if (= 1 (mod (count args) 2)) (error "Odd number of arguments to 'cond'"))  
                             cond-exprs (apply array-map args)]
-                        (loop [remaining-exprs cond-exprs
-                               previous-env env]
+                        (loop [remaining-exprs cond-exprs]
                           (if (empty? remaining-exprs)
                             (error (str "None of the conditions matched: " expr))
                             (let [[cnd conseq] (first remaining-exprs)
-                                  [cnd-res new-env] (eval-exp cnd previous-env)]
+                                  [cnd-res _] (eval-exp cnd env)]
                               (if (is-truthy cnd-res)
-                                (let [[res new-env] (eval-exp conseq new-env)]
+                                (let [[res new-env] (eval-exp conseq env)]
                                   [res new-env])
-                                (recur (rest remaining-exprs) new-env))))))
+                                (recur (rest remaining-exprs)))))))
     
     [["lambda" & args]] (let [[arg-names lambda-expr rest] args
                               _ (error-if (or (nil? arg-names) (nil? lambda-expr) rest) "Expected two arguments for 'lambda'")
@@ -140,7 +140,7 @@
     
     :else (if (coll? expr)
             ;; Evaluate procedure call.
-            (let [[evalled-args _] (eval-exprs expr env)
+            (let [evalled-args (map #(first (eval-exp % env)) expr)
                   proc (first evalled-args)
                   proc-args (rest evalled-args)
                   result (apply proc proc-args)]
@@ -159,8 +159,7 @@
 ; Evaluates all given expressions, chaining the environment returned by each evaluation
 ; through to the next one. Returns [list of results of the evaluation, final environment]
 ; It's basically a 'map' operation - except we have to pass the updated environment along. 
-; Can we do this more neatly?
-(defn eval-exprs [exprs env]
+ (defn eval-exprs [exprs env]
   (loop [es exprs
          previous-env env
          results []]
