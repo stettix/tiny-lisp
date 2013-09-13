@@ -1,3 +1,5 @@
 # Introduction to tiny-lisp
 
-TODO: write [great documentation](http://jacobian.org/writing/great-documentation/what-to-write/)
+See www.janvsmachine.net/learning-clojure/writing-simple-lisp-interpreter-in-clojure.html for a description.
+
+

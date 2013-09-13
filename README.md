@@ -1,13 +1,11 @@
 # tiny-lisp
 
-A Clojure library designed to ... well, that part is up to you.
+A simple Lisp interpreter written in Clojure, inspired by Peter Norvig and Michael Nielsen.
 
 ## Usage
 
-FIXME
+Run from the command line and you'll get a prompt where you can evaluate lisp expressions.
 
 ## License
 
-Copyright © 2013 FIXME
-
-Distributed under the Eclipse Public License, the same as Clojure.
+Distributed under the Unlicense, see http://unlicense.org.
